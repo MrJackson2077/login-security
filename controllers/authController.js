@@ -1,7 +1,7 @@
-// controllers / authController.js(MAIN LOGIC)
-const bcrypt = require("bcrypt");
+// controllers/authController.js
+// Handles HTTP requests only — all business logic lives in userService.js
 const jwt = require("jsonwebtoken");
-const getConnection = require("../database/db");
+const { createUser, updatePassword, validateCredentials } = require("../services/userService");
 
 exports.login = async (req, res) => {
     try {
@@ -11,27 +11,14 @@ exports.login = async (req, res) => {
             return res.status(400).json({ error: "Username and password required" });
         }
 
-        const conn = await getConnection();
+        const validUser = await validateCredentials(username, password);
 
-        const result = await conn.execute(
-            `SELECT USERNAME, PASSWORD FROM LOGIN_USERS WHERE USERNAME = :username`,
-            [username]
-        );
-
-        if (result.rows.length === 0) {
-            return res.status(401).json({ error: "Invalid user" });
-        }
-
-        const dbPassword = result.rows[0][1];
-
-        const isMatch = await bcrypt.compare(password, dbPassword);
-
-        if (!isMatch) {
-            return res.status(401).json({ error: "Wrong password" });
+        if (!validUser) {
+            return res.status(401).json({ error: "Invalid username or password" });
         }
 
         const token = jwt.sign(
-            { username },
+            { username: validUser },
             process.env.JWT_SECRET || "default_secret_for_tests",
             { expiresIn: "1h" }
         );
@@ -52,27 +39,11 @@ exports.register = async (req, res) => {
             return res.status(400).json({ error: "Username and password required" });
         }
 
-        const conn = await getConnection();
+        const created = await createUser(username, password);
 
-        // Check if user already exists
-        const checkResult = await conn.execute(
-            `SELECT USERNAME FROM LOGIN_USERS WHERE USERNAME = :username`,
-            [username]
-        );
-
-        if (checkResult.rows.length > 0) {
+        if (!created) {
             return res.status(409).json({ error: "User already exists" });
         }
-
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Insert new user
-        await conn.execute(
-            `INSERT INTO LOGIN_USERS (USERNAME, PASSWORD) VALUES (:username, :password)`,
-            [username, hashedPassword],
-            { autoCommit: true }
-        );
 
         res.status(201).json({ message: "User registered successfully" });
 
@@ -90,27 +61,11 @@ exports.resetPassword = async (req, res) => {
             return res.status(400).json({ error: "Username and new password required" });
         }
 
-        const conn = await getConnection();
+        const updated = await updatePassword(username, password);
 
-        // Check if user exists
-        const checkResult = await conn.execute(
-            `SELECT USERNAME FROM LOGIN_USERS WHERE USERNAME = :username`,
-            [username]
-        );
-
-        if (checkResult.rows.length === 0) {
+        if (!updated) {
             return res.status(404).json({ error: "User not found" });
         }
-
-        // Hash new password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Update password
-        await conn.execute(
-            `UPDATE LOGIN_USERS SET PASSWORD = :password WHERE USERNAME = :username`,
-            [hashedPassword, username],
-            { autoCommit: true }
-        );
 
         res.json({ message: "Password reset successfully" });
 
