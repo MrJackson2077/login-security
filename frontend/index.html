@@ -17,8 +17,8 @@
     
     <div class="login-container">
         <h1 class="hidden-title">Secure Login System</h1>
-        <h2>Welcome Back</h2>
-        <p>Log in to access your secure dashboard.</p>
+        <h2 id="formTitle">Welcome Back</h2>
+        <p id="formSubtitle">Log in to access your secure dashboard.</p>
         
         <form id="loginForm">
             <div class="input-group">
@@ -27,15 +27,21 @@
             </div>
             
             <div class="input-group">
-                <label for="password">Password</label>
+                <label for="password" id="passwordLabel">Password</label>
                 <input type="password" id="password" name="password" placeholder="Enter password" required>
             </div>
             
             <div class="error-message" id="errorMessage"></div>
             <div class="success-message" id="successMessage"></div>
             
-            <button type="submit" id="loginBtn">Log In</button>
+            <button type="submit" id="mainBtn">Log In</button>
         </form>
+        
+        <div class="form-toggles" style="margin-top: 15px; text-align: center; font-size: 0.9rem;">
+            <a href="#" id="toggleRegister" style="color: #818cf8; text-decoration: none; margin: 0 10px;">Create Account</a>
+            <a href="#" id="toggleReset" style="color: #818cf8; text-decoration: none; margin: 0 10px;">Forgot Password?</a>
+            <a href="#" id="toggleLogin" style="color: #818cf8; text-decoration: none; margin: 0 10px; display: none;">Back to Login</a>
+        </div>
     </div>
 
     <script src="script.js"></script>

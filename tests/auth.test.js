@@ -96,4 +96,64 @@ describe("Auth API Endpoints", () => {
 
         expect(res.statusCode).toEqual(401);
     });
+
+    // ---------------- REGISTER TESTS ---------------- //
+    test("POST /api/register with new user should return 201", async () => {
+        // Mock that user doesn't exist
+        mockConn.execute.mockResolvedValueOnce({ rows: [] }); 
+        // Mock successful insert
+        mockConn.execute.mockResolvedValueOnce({});
+
+        const res = await request(app)
+            .post("/api/register")
+            .send({ username: "newuser", password: "password123" });
+
+        expect(res.statusCode).toEqual(201);
+        expect(res.body).toHaveProperty("message", "User registered successfully");
+        // Verify insert query was called
+        expect(mockConn.execute).toHaveBeenCalledTimes(2);
+    });
+
+    test("POST /api/register with existing user should return 409", async () => {
+        // Mock that user exists
+        mockConn.execute.mockResolvedValueOnce({ rows: [["existinguser"]] }); 
+
+        const res = await request(app)
+            .post("/api/register")
+            .send({ username: "existinguser", password: "password123" });
+
+        expect(res.statusCode).toEqual(409);
+        expect(res.body).toHaveProperty("error", "User already exists");
+        expect(mockConn.execute).toHaveBeenCalledTimes(1); // Insert shouldn't run
+    });
+
+    // ---------------- RESET PASSWORD TESTS ---------------- //
+    test("POST /api/reset-password for existing user should return 200", async () => {
+        // Mock that user exists
+        mockConn.execute.mockResolvedValueOnce({ rows: [["admin"]] }); 
+        // Mock successful update
+        mockConn.execute.mockResolvedValueOnce({});
+
+        const res = await request(app)
+            .post("/api/reset-password")
+            .send({ username: "admin", password: "newpassword" });
+
+        expect(res.statusCode).toEqual(200);
+        expect(res.body).toHaveProperty("message", "Password reset successfully");
+        expect(mockConn.execute).toHaveBeenCalledTimes(2);
+    });
+
+    test("POST /api/reset-password for unknown user should return 404", async () => {
+        // Mock that user doesn't exist
+        mockConn.execute.mockResolvedValueOnce({ rows: [] }); 
+
+        const res = await request(app)
+            .post("/api/reset-password")
+            .send({ username: "unknown", password: "newpassword" });
+
+        expect(res.statusCode).toEqual(404);
+        expect(res.body).toHaveProperty("error", "User not found");
+        expect(mockConn.execute).toHaveBeenCalledTimes(1);
+    });
+
 });
