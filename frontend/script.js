@@ -73,7 +73,15 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             body: JSON.stringify({ username, password })
         });
         
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        } catch (parseErr) {
+            if (!response.ok) {
+                throw new Error(`Server returned ${response.status} ${response.statusText}`);
+            }
+            throw new Error("Invalid response from server");
+        }
         
         if (response.ok) {
             successEl.textContent = data.message || 'Login successful! Redirecting...';
@@ -107,7 +115,10 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
             errorEl.style.display = 'block';
         }
     } catch (err) {
-        errorEl.textContent = 'Network error. Cannot reach server.';
+        console.error(err);
+        errorEl.textContent = err.message.includes('Server returned') 
+            ? err.message + '. Please ensure the server is restarted to load the latest code.' 
+            : 'Network error. Cannot reach server.';
         errorEl.style.display = 'block';
     } finally {
         if (currentMode === 'login') mainBtn.textContent = 'Log In';
